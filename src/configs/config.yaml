@@ -1,23 +1,126 @@
-data:
-  batch_size: 256
-  num_workers: 10
-  val_ratio: 0.1
+linear:
+  logging:
+    checkpoints: "/home/sebnm/AIProjects/Forecasting/outputs/checkpoints/linear/"
+    figures: "/home/sebnm/AIProjects/Forecasting/outputs/figures/linear/"
+    predictions: "/home/sebnm/AIProjects/Forecasting/outputs/predictions/linear/"
+    scores: "/home/sebnm/AIProjects/Forecasting/outputs/scores/linear/"
+    times : "/home/sebnm/AIProjects/Forecasting/outputs/times/linear/" 
 
-optim:
-  algo: AdamW
-  params:
-    lr: 1e-4
 
-nepochs: 300
-loss: # "CrossEntropyLoss"
-amp: True
 
-logging:
-  wandb:
-    project: project-name
-    entity: project-name
-  logdir: # Better to provide the fullpath, especially on the cluster
+xgb:
+  logging:
+    checkpoints: "/home/sebnm/AIProjects/Forecasting/outputs/checkpoints/xgb/"
+    figures: "/home/sebnm/AIProjects/Forecasting/outputs/figures/xgb/"
+    predictions: "/home/sebnm/AIProjects/Forecasting/outputs/predictions/xgb/"
+    scores: "/home/sebnm/AIProjects/Forecasting/outputs/scores/xgb/"
+    times : "/home/sebnm/AIProjects/Forecasting/outputs/times/xgb/"
 
-model:
-  class: net
+  MULTIVARIATE: False
+  TESTSIZE: 24
+  VALSIZE: 2880
+  N_FOLDS: 5 # for TSS
+  HORIZON: 1
+  WINDOW: 24
+
+
+
+lstm:
+  TESTSIZE: 2880 #24 ou 2880
+  WINDOW: 168
+  HORIZON: 1
+  TARGET: "OT"
+  EPOCHS: 50
+  BATCH_SIZE: 64
+  NB_OF_FEATURES: 1
+  HIDDEN_SIZE_LAYER: 32
+
+  lr : 0.001        # for AdamW
+  weight_decay: 0.1 # for AdamW
+  loss: "MSELoss"
+
+  logging:
+    checkpoints: "/home/sebnm/AIProjects/Forecasting/outputs/checkpoints/lstm/"
+    figures: "/home/sebnm/AIProjects/Forecasting/outputs/figures/lstm/"
+    predictions: "/home/sebnm/AIProjects/Forecasting/outputs/predictions/lstm/"
+    scores: "/home/sebnm/AIProjects/Forecasting/outputs/scores/lstm/"
+    times : "/home/sebnm/AIProjects/Forecasting/outputs/times/lstm/" 
+
+
+
+patchtst:
+  logging:
+    checkpoints: "/home/sebnm/AIProjects/Forecasting/outputs/checkpoints/patchtst/"
+    figures: "/home/sebnm/AIProjects/Forecasting/outputs/figures/patchtst/"
+    predictions: "/home/sebnm/AIProjects/Forecasting/outputs/predictions/patchtst/"
+    scores: "/home/sebnm/AIProjects/Forecasting/outputs/scores/patchtst/"
+    times : "/home/sebnm/AIProjects/Forecasting/outputs/times/patchtst/"
+
+  SEED: 2021
+  data: "ETTh1"
+  root_path: "/home/sebnm/AIProjects/Forecasting/src/data/ETT/"
+  data_path: 'ETTh1.csv'
+  features: "MS"
+  # features:
+  #   MS : multivariate predict univariate
+  #   S  : univariate predict univariate
+  is_training: True
+  pred_len: [1, 24, 96, 168]
+  seq_len: 336
+  label_len: 48
+
+  #PatchTST
+  fc_dropout: 0.3
+  head_dropout: 0
+  patch_len: 16
+  stride: 8
+  padding_patch: 'end'
+  revin: 1
+  affine: 0
+  subtract_last: 0
+  decomposition: 0
+  kernel_size: 25
+  individual: 0
+
+  # Formers
+  enc_in: 7
+  e_layers: 3
+  n_heads: 4
+  d_model: 16
+  d_ff: 128
+  dropout: 0.3
+  embed_type: 0
+  dec_in: 7
+  c_out: 7
+  d_layers: 1
+  moving_avg: 25
+  factor: 1
+  distil: True
+  embed: 'timeF'
+  activation: 'gelu'
+  output_attention: False
+  do_predict: False
+
+  # optimization
+  des: 'Exp'
+  train_epochs: 100
+  itr: 1
+  batch_size: 128
+  learning_rate: 0.0001
+  num_workers: 8
+  patience: 20
+  loss: 'mse'
+  lradj: 'type3'
+  pct_start: 0.3
+  use_amp: True
+
+  # GPU
+  use_gpu: True
+  gpu: 0
+  use_multi_gpu: False
+  devices: '0,1,2,3'
+  test_flop: False
+
+LNN:
+
 

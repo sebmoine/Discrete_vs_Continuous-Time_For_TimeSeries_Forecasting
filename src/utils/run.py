@@ -1,10 +1,7 @@
 import torch
-import wandb
-import logging
 import tqdm
-import matplotlib.pyplot as plt
 
-def train_one_epoch(model, loader, criterion, optimizer, device, scaler):
+def train_one_epoch(model, loader, criterion, optimizer, device, scaler=None):
     model.train()
 
     epoch_loss = 0
@@ -19,13 +16,13 @@ def train_one_epoch(model, loader, criterion, optimizer, device, scaler):
         if scaler is not None:
             with torch.cuda.amp.autocast():
                 logits = model(inputs)
-                loss = criterion(logits)
+                loss = criterion(logits, targets)
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
         else:
             logits = model(inputs)
-            loss = criterion(logits)
+            loss = criterion(logits, targets)
             loss.backward()
             optimizer.step()
 
@@ -57,62 +54,3 @@ def validate(model, loader, criterion, device):
     epoch_loss = epoch_loss / num_samples
 
     return epoch_loss
-
-def fit(
-    config,
-    model,
-    train_loader,
-    val_loader,
-    criterion,
-    optimizer,
-    device,
-    checkpoint,
-    logdir
-    ):
-
-
-    num_epochs   =  config["nepochs"]
-    train_losses = []
-    val_losses   = []
-    scaler = torch.cuda.amp.GradScaler(enabled=config["amp"]) #otherwise None
-
-    for epoch in range(num_epochs):
-
-        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device, scaler)
-        val_loss, val_acc = validate(model, val_loader, criterion, device)
-
-        train_losses.append(train_loss)
-        val_losses.append(val_loss)
-
-        old_lr = optimizer.param_groups[0]["lr"]
-
-        logging.info(
-            f"Epoch [{epoch+1}/{config['nepochs']}] "
-            f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} "
-            f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}"
-        )
-
-        if config["logging"].get("wandb"):
-            wandb.log({
-                "epoch": epoch + 1,
-                "train_loss": train_loss,
-                "train_acc": train_acc,
-                "val_loss": val_loss,
-                "val_acc": val_acc,
-                "learning_rate": old_lr
-            })
-
-        updated = checkpoint.update(val_loss)
-        if updated:
-            logging.info("New best model saved!")
-            #wandb.save(str(checkpoint.savepath)) # If save in Cloud
-
-    plt.figure()
-    plt.plot(train_losses, c="red", label="train loss")
-    plt.plot(val_losses, c="blue", label="validation loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Losses")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig(f'{logdir}/training_losses.png')
-    plt.close()

@@ -1,0 +1,17 @@
+*.pth
+*.pt
+*.log
+*.npy
+*.parquet
+*.txt
+*.pyc
+*__pycache__
+
+.vscode
+outputs/checkpoints/
+outputs/figures/
+outputs/predictions/
+outputs/scores/
+outputs/times/
+
+*.png
