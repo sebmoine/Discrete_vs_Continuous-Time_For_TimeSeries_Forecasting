@@ -8,6 +8,7 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 import torch
 import pathlib
+import logging
 
 from src.data import get_dataloaders
 from src.models import VanillaLSTM
@@ -97,11 +98,11 @@ def lstm(cfg, df, device):
     for epoch in tqdm.tqdm(range(EPOCHS)):
         train_loss = train_one_epoch(model, train_loader, loss, optim, device)
         val_loss = validate(model, val_loader, loss, device)
-        print(f"Epoch {epoch+1},\tTrain Loss : {train_loss:.5f},\tVal Loss : {val_loss:.5f}")
+        logging.info(f"Epoch {epoch+1},\tTrain Loss : {train_loss:.5f},\tVal Loss : {val_loss:.5f}")
         
         updated = checkpoint.update(val_loss)
         if updated:
-            print("New best model saved!")
+            logging.info("New best model saved!")
 
     # ***** PREDICTIONS & PLOTS *****
     with torch.no_grad():
@@ -123,14 +124,16 @@ def lstm(cfg, df, device):
     y_pred_test_rescaled = scaler.inverse_transform(y_pred_test)
     y_test_rescaled = scaler.inverse_transform(y_test.reshape(-1, 1))
     shift_value = np.abs(min(min(y_test_rescaled), min(y_pred_test_rescaled))) + 1
-    mae = mean_absolute_error(y_test_rescaled, y_pred_test_rescaled)
-    rmse = np.sqrt(mean_squared_error(y_test_rescaled, y_pred_test_rescaled))
-    mape = np.mean((np.abs((y_test_rescaled+shift_value) - (y_pred_test_rescaled+shift_value))/(y_test_rescaled+shift_value))*100)
+    mae = round(mean_absolute_error(y_test_rescaled, y_pred_test_rescaled),3)
+    rmse = round(np.sqrt(mean_squared_error(y_test_rescaled, y_pred_test_rescaled)),3)
+    mape = round(np.mean((np.abs((y_test_rescaled+shift_value) - (y_pred_test_rescaled+shift_value))/(y_test_rescaled+shift_value))*100),3)
+    logging.info(f"\nTest metrics:\n\t- MAE:{mae}\n\t- RMSE:{rmse}\n\t- MAPE:{mape}%")
+
     if TESTSIZE == 24:
         y_rescaled = scaler.inverse_transform(y.reshape(-1, 1))
         plt.figure(figsize = (15,5))
         plt.plot(df.index[-100:], y_rescaled[-100:], color="grey", label="Actual temperature\n")
-        plt.plot(df.index[-len(y_test_rescaled):], y_pred_test_rescaled, color="orange", label=f"Predicted temperature\nMAE:{mae:.4f}\nRMSE:{rmse:.4f}\nMAPE:{mape:.2f}%")
+        plt.plot(df.index[-len(y_test_rescaled):], y_pred_test_rescaled, color="orange", label=f"Predicted temperature\nMAE:{mae}\nRMSE:{rmse}\nMAPE:{mape}%")
         plt.axvline(df.index[-len(y_test_rescaled):].min(), color="black", linestyle='--', alpha=0.5)
         plt.xlabel('Date')
         plt.ylabel("Oil Temperature in Celsius")
@@ -142,8 +145,8 @@ def lstm(cfg, df, device):
         pred_series.to_frame(name=f"LSTM_{CONFIG}_prediction").to_parquet(cfg_logging["predictions"] + f"LSTM_{CONFIG}_prediction.parquet") # save preds
     else:
         plt.figure(figsize = (15,5))
-        plt.plot(df.index[-len(y_test_rescaled):], y_test_rescaled, label="Actual temperature")
-        plt.plot(df.index[-len(y_test_rescaled):], y_pred_test_rescaled, label=f"Predicted temperature\nMAE:{mae:.4f}\nRMSE:{rmse:.4f}\nMAPE:{mape:.2f}%")
+        plt.plot(df.index[-len(y_test_rescaled):], y_test_rescaled, label="Actual temperature\n")
+        plt.plot(df.index[-len(y_test_rescaled):], y_pred_test_rescaled, label=f"Predicted temperature\nMAE:{mae}\nRMSE:{rmse}\nMAPE:{mape}%")
         plt.xlabel('Date')
         plt.ylabel("Oil Temperature in Celsius")
         plt.title(f"Predictions des températures du TEST SET ({X_test.size(0)}h)")
@@ -162,24 +165,35 @@ def lstm(cfg, df, device):
     plt.plot(df.index[-len(y_test_rescaled):], y_pred_test_rescaled, color="red", alpha=0.8, label="Predictions")
     plt.xlabel('Date')
     plt.ylabel("Oil Temperature in Celsius")
-    plt.title("Predictions des températures du TEST SET")
+    plt.title("Predictions des températures du TEST SET (avec TRAIN/VAL SET)")
     plt.legend()
     plt.savefig(cfg_logging["figures"] + f"train-val-test_lstm_{CONFIG}.png")
 
     scores_path = cfg_logging["scores"] + "lstm_scores.parquet"
     if os.path.exists(scores_path):
-        df = pd.read_parquet(scores_path)
-        if (df["Model"] == f"LSTM_{CONFIG}").any():
+        result_table = pd.read_parquet(scores_path)
+        if (result_table["Model"] == f"LSTM_{CONFIG}").any():
             print("Cette configuration de LSTM a déjà été renseigné (donc testée), fin du processus.")
         else:
             print("Ajout d'une nouvelle ligne aux scores des LSTM...")
-            scores_model = {"Model":f"LSTM_{CONFIG}", "Train_size":X_train.size(0), "Val_size":X_val.size(0), "Test_size":X_test.size(0), "MAE":mae, "RMSE":rmse, "MAPE(%)":mape}
-            df.loc[df.shape[0]] = scores_model
-            df.sort_values(by=["Test_size", "MAE"], inplace=True)
-            df.to_parquet(scores_path) # save dataframe
+            scores_model = {"Model":f"LSTM_{CONFIG}",
+                            "Train_size":X_train.size(0),
+                            "Val_size":X_val.size(0),
+                            "Test_size":X_test.size(0),
+                            "MAE":mae,
+                            "RMSE":rmse,
+                            "MAPE(%)":mape}
+            result_table.loc[result_table.shape[0]] = scores_model
+            result_table.sort_values(by=["Test_size", "MAE"], inplace=True)
+            result_table.to_parquet(scores_path) # save dataframe
+            # Export markdown (lisible)
+            with open(f"{scores_path}.md", "w", encoding="utf-8") as f:
+                f.write(result_table.to_markdown(index=False))
     else: 
         print("Fichier des scores LSTM inexistant, création.")
         result_table = pd.DataFrame(columns=["Model","Train_size","Val_size","Test_size", "MAE","RMSE","MAPE(%)"])
         scores_model = {"Model":f"LSTM_{CONFIG}", "Train_size":X_train.size(0), "Val_size":X_val.size(0), "Test_size":X_test.size(0), "MAE":mae, "RMSE":rmse, "MAPE(%)":mape}
         result_table.loc[len(result_table)] = scores_model
         result_table.to_parquet(scores_path) # save dataframe
+        with open(f"{scores_path}.md", "w", encoding="utf-8") as f:
+            f.write(result_table.to_markdown(index=False))

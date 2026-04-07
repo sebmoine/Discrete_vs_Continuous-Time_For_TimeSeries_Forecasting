@@ -121,6 +121,7 @@ def xgb_multivariate(cfg, df):
     HORIZON = cfg["HORIZON"]
     WINDOW = cfg["WINDOW"]
 
+
     num_periods_output  = HORIZON # HORIZON TO PREDICT
     num_periods_input   = WINDOW  # w, the WINDOW
     ALL_Test_Data, ALL_Test_Prediction =[], []

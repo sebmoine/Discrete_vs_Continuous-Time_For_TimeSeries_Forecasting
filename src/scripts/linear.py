@@ -73,7 +73,7 @@ def linear(cfg, df):
     plt.savefig(figures_path + "ARIMA.png")
 
     result_table = pd.DataFrame(columns=["Model","Train_size","Val_size","Test_size", "MAE","RMSE","MAPE(%)"])
-    scores_model = {"Model":"First ARIMA", "Train_size":train_data.shape[0], "Val_size":0, "Test_size":testsize, "MAE":mae, "RMSE":rmse, "MAPE(%)":mape}
+    scores_model = {"Model":"ARIMA", "Train_size":train_data.shape[0], "Val_size":0, "Test_size":testsize, "MAE":mae, "RMSE":rmse, "MAPE(%)":mape}
     result_table.loc[len(result_table)] = scores_model
     forecast_final.to_frame(name="ARIMA_prediction").to_parquet(predictions_path + "ARIMA_prediction.parquet") # save preds
 
@@ -109,7 +109,6 @@ def linear(cfg, df):
     scores_model = {"Model":"SARIMAX_1", "Train_size":train.shape[0], "Val_size":0, "Test_size":testsize, "MAE":mae, "RMSE":rmse, "MAPE(%)":mape}
     result_table.loc[len(result_table)] = scores_model
     forecast.to_frame(name="SARIMAX_1_prediction").to_parquet(predictions_path + "SARIMAX_1_prediction.parquet") # save preds
-
 
 
     # ----------------- Estimation du modèle entrainé SARIMA-GridSearched sur FULL-24 -----------------
@@ -166,7 +165,8 @@ def linear(cfg, df):
     result_table.to_parquet(scores_path + "linear_scores.parquet") # save dataframe
     forecast["yhat"].to_frame(name="prophet_prediction").to_parquet(predictions_path + "prophet_prediction.parquet") # save preds
 
-
+    with open(f"{scores_path}linear_scores.parquet.md", "w", encoding="utf-8") as f:
+        f.write(result_table.to_markdown(index=False))
 
 
 

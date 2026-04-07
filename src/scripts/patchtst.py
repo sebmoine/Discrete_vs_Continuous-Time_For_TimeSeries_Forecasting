@@ -25,8 +25,9 @@ def patchtst(cfg):
             root_path=cfg["root_path"],
             data_path=cfg["data_path"],
             checkpoints=cfg["logging"]["checkpoints"],
-            results=cfg["logging"]["scores"],
+            figures=cfg["logging"]["figures"],
             predictions=cfg["logging"]["predictions"],
+            results=cfg["logging"]["scores"],
 
             model_id = f"{data}_{pred_len}",
             model='PatchTST',
