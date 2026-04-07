@@ -1,6 +1,5 @@
 linear:
   logging:
-    checkpoints: "/home/sebnm/AIProjects/Forecasting/outputs/checkpoints/linear/"
     figures: "/home/sebnm/AIProjects/Forecasting/outputs/figures/linear/"
     predictions: "/home/sebnm/AIProjects/Forecasting/outputs/predictions/linear/"
     scores: "/home/sebnm/AIProjects/Forecasting/outputs/scores/linear/"
@@ -26,7 +25,7 @@ xgb:
 
 
 lstm:
-  TESTSIZE: 2880 #24 ou 2880
+  TESTSIZE: 24 #24 ou 2880
   WINDOW: 168
   HORIZON: 1
   TARGET: "OT"
@@ -103,7 +102,7 @@ patchtst:
 
   # optimization
   des: 'Exp'
-  train_epochs: 100
+  train_epochs: 150
   itr: 1
   batch_size: 128
   learning_rate: 0.0001
