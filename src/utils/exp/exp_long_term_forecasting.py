@@ -16,6 +16,7 @@ import os
 import time
 import warnings
 import numpy as np
+import matplotlib.pyplot as plt
 from torch.optim import lr_scheduler 
 
 
@@ -219,9 +220,8 @@ class Exp_Main(Exp_Basic):
         preds = []
         trues = []
         inputx = []
-        folder_path = self.args.results + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        folder_path = self.args.figures + setting + '/'
+        os.makedirs(folder_path, exist_ok=True) # folder "scores"
 
         self.model.eval()
         with torch.no_grad():
@@ -259,20 +259,36 @@ class Exp_Main(Exp_Basic):
                 # print(outputs.shape,batch_y.shape)
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
-                outputs = outputs.detach().cpu().numpy()
-                batch_y = batch_y.detach().cpu().numpy()
-
-                pred = outputs  # outputs.detach().cpu().numpy()  # .squeeze()
-                true = batch_y  # batch_y.detach().cpu().numpy()  # .squeeze()
-
-                preds.append(pred)
-                trues.append(true)
+                preds.append(outputs.detach().cpu().numpy())
+                trues.append(batch_y.detach().cpu().numpy())
                 inputx.append(batch_x.detach().cpu().numpy())
-                if i % 20 == 0:
-                    input = batch_x.detach().cpu().numpy()
-                    gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
-                    pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
-                    visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+                # if i % 20 == 0:
+                #     input = batch_x.detach().cpu().numpy()
+                #     gt = np.concatenate((input[0, :, -1], true[0, :, -1]), axis=0)
+                #     pd = np.concatenate((input[0, :, -1], pred[0, :, -1]), axis=0)
+                #     visual(gt, pd, os.path.join(folder_path, str(i) + '.pdf'))
+
+
+        colors = ["blue", "orange", "green", "red", "purple"] # 5 cycling colors for batches separation
+        plt.figure(figsize=(16, 8))
+        trues_plot = np.concatenate([t[:, :, -1].reshape(-1) for t in trues])
+        plt.plot(trues_plot, color="black", linestyle='-', alpha=0.8, label=f"Original test set (true)")
+
+        current_x = 0
+
+        # Plot batch per batch
+        for i in range(len(preds)):
+            pred = preds[i][:, :, -1].reshape(-1)
+            true = trues[i][:, :, -1].reshape(-1)
+
+            length = len(true)
+            x_range = np.arange(current_x, current_x + length)
+
+            color = colors[i % len(colors)]
+
+            plt.plot(x_range, pred, color=color, linestyle='--', alpha=0.8, label=f"Prediction (batch {i+1})")
+
+            current_x += length
 
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1],batch_x.shape[2]))
@@ -284,23 +300,32 @@ class Exp_Main(Exp_Basic):
         preds = preds.reshape(-1, preds.shape[-2], preds.shape[-1])
         trues = trues.reshape(-1, trues.shape[-2], trues.shape[-1])
         inputx = inputx.reshape(-1, inputx.shape[-2], inputx.shape[-1])
+        mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
+
+        plt.title(f"Test set - Ground Truth vs Predictions (per batch) - Global MAPE: {(mape*100):.3f}%")
+        plt.xlabel("Time step")
+        plt.ylabel("Value")
+        plt.legend()
+        plt.savefig(folder_path + f"patchtst_test_predictions.png")
+        plt.close()
+
 
         # result save
-        folder_path = self.args.predictions + setting + '/'
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        folder_path = self.args.results + setting + '/'
+        os.makedirs(folder_path, exist_ok=True)
 
-        mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
-        print('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
-        f = open("test_result.txt", 'a')
+        print(f"MAE:{mae:.3f}, RMSE:{rmse:.3f}, MAPE:{(mape*100):.3f}%")
+        f = open(folder_path+"test_result.txt", 'a')
         f.write(setting + "  \n")
-        f.write('mse:{}, mae:{}, rse:{}'.format(mse, mae, rse))
+        f.write(f"MAE:{mae:.3f}, RMSE:{rmse:.3f}, MAPE:{(mape*100):.3f}%")
         f.write('\n')
         f.write('\n')
         f.close()
 
+        folder_path = self.args.predictions + setting + '/'
+        os.makedirs(folder_path, exist_ok=True)
         # np.save(folder_path + 'metrics.npy', np.array([mae, mse, rmse, mape, mspe,rse, corr]))
-        np.save(folder_path + 'test_pred.npy', preds)
+        np.save(folder_path + f'test_pred.npy', preds) # ici changer en parquet et avec dates
         # np.save(folder_path + 'true.npy', trues)
         # np.save(folder_path + 'x.npy', inputx)
         return

@@ -8,6 +8,6 @@ def print_time(start,end):
     mins = (time % 3600) // 60
     secs = time % 60
     if logging:
-        logging.info(f"{days} day(s), {hours} hour(s), {mins} min(s) and {secs} sec(s).\n")
+        print(f"{int(days)} day(s), {int(hours)} hour(s), {int(mins)} min(s) and {secs:.3f} sec(s).\n")
     else:
-        print(f"{days} day(s), {hours} hour(s), {mins} min(s) and {secs} sec(s).\n")
+        print(f"{int(days)} day(s), {int(hours)} hour(s), {int(mins)} min(s) and {secs:.3f} sec(s).\n")
