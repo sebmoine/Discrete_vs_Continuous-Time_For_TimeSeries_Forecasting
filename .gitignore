@@ -8,10 +8,10 @@
 *__pycache__
 
 .vscode
-outputs/checkpoints/
-outputs/figures/
-outputs/predictions/
-outputs/scores/
-outputs/times/
+outputs/checkpoints/*
+outputs/figures/*
+outputs/predictions/*
+outputs/scores/*
+outputs/times/*
 
 *.png
