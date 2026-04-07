@@ -1,13 +1,13 @@
 # TO-DO (31-03-2026)
 ## PatchTST :
-- Corriger les PDF de PatchTST avec métriques et mettre en .png ("scores" --> "figures")
-- Corriger sorties de results.txt et test_results.txt dans "scores"
-- Corriger les sorties des "prédictions" en ajoutant les dates et save en .parquet
+- Corriger les sorties des "prédictions" en ajoutant les dates et save en .parquet (line 325)
+- Adapter les params pour prédire sur 24h (ajout de VALSIZE et TESTSIZE)
+
+## Linear :
+- Ne conserver que les preds du meilleur modèle OU du moins mettre une balise type "[BEST]"
 
 ## LSTM :
-- Rajouter les train log ?
-- Rajouter un modèle faisant la prédiction sur les 24 dernières heures (params de config ?)
-- Recharger le lstm_scores.parquet et ajouter data si pas dejà fait
+- Vérifier/Refaire les fenêtres
 
 ## XGB:
 - Modifier la méthode de fenêtre sur le Univariate (first method)
@@ -16,6 +16,7 @@
 - Corriger plot xgb_UNIVARIATE_preds_last_24h.png
 - Faire les "prédictions"
 - Comparer/Ajouter le Univariate avec la méthode papier (fenetre deja ajustée)
+- Explorer https://github.com/truefit-ai/m5
 
 ## AUTRES
 - Faire un .parquet du DataFrame des scores, unifié
@@ -23,3 +24,4 @@
 - Faire en plus des "scores" dans un format lisibles direct type .txt ou Markdown
 - Faire les "times" et arrondir les secondes dans la méthode fcts_times
 - [LAST] Implem LNN
+- Add model_name = "all"
